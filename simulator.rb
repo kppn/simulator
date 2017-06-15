@@ -7,14 +7,6 @@ require 'awesome_print'
 
 require_relative 'xproto'
 
-
-class UDPSocket
-  alias old_send send
-  def send(msg)
-    old_send msg, 0
-  end
-end
-
 # event exception
 class Transit < StandardError
   attr_accessor :before_state, :after_state
@@ -138,7 +130,7 @@ class Simulator
     # @__peers[sig_receiver] = { name: name.to_sym, proto_klass: proto_klass }
     sock, _ = @__peers.find{|_, peer_info| peer_info[:name] == name} 
 
-    sock.send sig
+    sock.send sig, 0
   end
 
   def transit(name)
@@ -204,7 +196,7 @@ class Simulator
         else
           peer_info = @__peers[sock]
           peer_name = peer_info[:name]
-          @sig = peer_info[:proto_klass].from_bytes(signal)
+          @sig = peer_info[:proto_klass].from_bytes(signal, *@decode_params)
         end
 
         events = @__states[@__current_state]
@@ -351,7 +343,11 @@ File.open('event.sock', 'w') do |f|
   f.puts "#{ip}:#{port}"
 end
 
-require_relative 'config'
+if ARGV.length == 2
+  require_relative ARGV.shift   # load config
+else
+  require_relative 'config'
+end
 
 # initialize simulator
 sig_socket = @sig_sockets.shift
