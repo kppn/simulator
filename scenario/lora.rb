@@ -6,7 +6,7 @@ state :initial do
     @unconfirmed_data_up.macpayload.fhdr.fctrl.adr = true
     @fcnt = 0
 
-    transit :join
+    transit :send_payload
   }
 end
 
@@ -75,10 +75,16 @@ end
 define do
 
 @appkey = ["01010101010101010101010101010101"].pack('H*')
-@decode_params = [{appkey: @appkey}]
+@nwkskey = ["30C8294FFA0B1DBBBD9FC329872EFDD8"].pack('H*')
+@appskey = ["19DA2FDABBFD96D86D54903353BEDCF2"].pack('H*')
+
+@decode_params = [{appkey: @appkey, nwkskey: @nwkskey, appskey: @appskey}]
 
 appeui = ['0102030405060708'].pack('H*')
 deveui = ['1112131415161718'].pack('H*')
+
+nwkid   = 0b0010011
+nwkaddr = 0b0_00000100_00010000_0110_1011
 
 @join_request = 
   PHYPayload.new(
@@ -101,11 +107,11 @@ deveui = ['1112131415161718'].pack('H*')
     macpayload: MACPayload.new(
       fhdr: FHDR.new(
         devaddr: DevAddr.new(
-          nwkid:   0b1000000,
-          nwkaddr: 0b0_10000001_10000010_10000011
+          nwkid:   nwkid,
+          nwkaddr: nwkaddr
         ),
         fctrl: FCtrl.new(
-          adr: true,
+          adr: false,
           adrackreq: false,
           ack: false
         ),
@@ -113,7 +119,7 @@ deveui = ['1112131415161718'].pack('H*')
         fopts: nil
       ),
       fport: 1,
-      frmpayload: FRMPayload.new("\x01\x02\x03\x04\x05\x06\x07\x08")
+      frmpayload: FRMPayload.new("\x00\x00\x00\x14")
     ),
   )
 
@@ -125,8 +131,8 @@ deveui = ['1112131415161718'].pack('H*')
     macpayload: MACPayload.new(
       fhdr: FHDR.new(
         devaddr: DevAddr.new(
-          nwkid:   0b1000000,
-          nwkaddr: 0b0_10000001_10000010_10000011
+          nwkid:   nwkid,
+          nwkaddr: nwkaddr
         ),
         fctrl: FCtrl.new(
           adr: true,

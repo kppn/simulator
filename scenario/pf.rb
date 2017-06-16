@@ -2,8 +2,8 @@ state :initial do
   in_action {
     #require_relative '/home/ta_kondoh/work/simulator/signal/pf'
 
-    @t_stat = 30
-    @t_pull = 10
+    @t_stat = 20
+    @t_pull = 30
 
     @n_uplink = 0
     @n_downlink = 0
@@ -78,7 +78,7 @@ end
 
 #===========================================
 define do
-  gw_eui = ['DEADBEAFDEADBEAF'].pack('H*')
+  gw_eui = ['DEADBEAFDEADBEBF'].pack('H*')
 
   @stat = PacketForwarder.new(
     head: PacketForwarder::Head.new(

@@ -14,8 +14,8 @@ class String
   end
 end
 
-#peer '150.95.134.143:1701', 'bridge.asia-se.things.network:1700', PacketForwarder
-peer '127.0.0.1:1701', '127.0.0.1:1700', PacketForwarder
+peer '150.95.134.143:1701', 'bridge.asia-se.thethings.network:1700', PacketForwarder
+#peer '127.0.0.1:1701', '127.0.0.1:1700', PacketForwarder
 
 peer :lorasim, '127.0.0.1:50001', '127.0.0.1:50000', Raw
 
