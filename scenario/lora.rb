@@ -1,13 +1,9 @@
 
 state :initial do
   in_action {
-    require_relative '/home/ta_kondoh/work/simulator/signal/lora'
-
-    @appkey = ["01010101010101010101010101010101"].pack('H*')
-    @decode_params = [{appkey: @appkey}]
+    #require_relative '/home/ta_kondoh/work/simulator/signal/lora'
 
     @unconfirmed_data_up.macpayload.fhdr.fctrl.adr = true
-
     @fcnt = 0
 
     transit :join
@@ -57,4 +53,55 @@ state :send_payload do
     #send @uplink_payload_empty.encode(*@decode_params)
   }
 end
+
+
+
+#===================================================
+define do
+
+@appkey = ["01010101010101010101010101010101"].pack('H*')
+@decode_params = [{appkey: @appkey}]
+
+appeui = ['0102030405060708'].pack('H*')
+deveui = ['1112131415161718'].pack('H*')
+
+@join_request = 
+  PHYPayload.new(
+    mhdr: MHDR.new(
+      mtype: MHDR::JoinRequest
+    ),
+    macpayload: JoinRequestPayload.new(
+      appeui: appeui,
+      deveui: deveui,
+      devnonce: "\x21\x22"
+    ),
+    mic: '',
+  )
+
+@unconfirmed_data_up = 
+  PHYPayload.new(
+    mhdr: MHDR.new(
+      mtype: MHDR::UnconfirmedDataUp
+    ),
+    macpayload: MACPayload.new(
+      fhdr: FHDR.new(
+        devaddr: DevAddr.new(
+          nwkid:   0b1000000,
+          nwkaddr: 0b0_10000001_10000010_10000011
+        ),
+        fctrl: FCtrl.new(
+          adr: false,
+          adrackreq: false,
+          ack: false
+        ),
+        fcnt: 0,
+        fopts: nil
+      ),
+      fport: 1,
+      frmpayload: FRMPayload.new("\x01\x02\x03\x04\x05\x06\x07\x08")
+    ),
+  )
+
+end
+
 

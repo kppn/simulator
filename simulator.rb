@@ -14,16 +14,20 @@ end
 
 # receiver
 class SignalReceiver < UDPSocket
-  def read_nonblock(*args)
-    raw_data = super(*args)
+#  def read_nonblock(*args)
+#  def recv_nonblock(*args)
+   def recv
+    raw_data = super(65535)
     [raw_data, Simulator::EventKind::Signal]
   end
 end
 
 # internal event receiver
 class EventReceiver < UDPSocket
-  def read_nonblock(*args)
-    raw_data = super(*args)
+#  def read_nonblock(*args)
+#  def recv_nonblock(*args)
+  def recv
+    raw_data = super(65535)
     kind = raw_data[0].unpack('C').shift
     data = raw_data[1..-1]
     [data, kind]
@@ -154,6 +158,12 @@ class Simulator
     end
   end
 
+  #--------------------------
+  # support functions
+  #--------------------------
+  def define(block)
+    self.instance_eval &block
+  end
 
 
 
@@ -189,7 +199,7 @@ class Simulator
         socks, _ = IO::select [*@__peers.keys, @__ev_receiver]
         sock = socks.first
 
-        signal, event_kind = sock.read_nonblock(65535)
+        signal, event_kind = sock.recv
 
         if sock == @__ev_receiver
           peer_name = nil
@@ -330,6 +340,9 @@ def state(state_name, &block)
   @simulator.add_state(state_name, &block)
 end
 
+def define(&block)
+  @simulator.define(block)
+end
 
 
 #=================================================-

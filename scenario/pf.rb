@@ -1,6 +1,6 @@
 state :initial do
   in_action {
-    require_relative '/home/ta_kondoh/work/simulator/signal/pf'
+    #require_relative '/home/ta_kondoh/work/simulator/signal/pf'
 
     @t_stat = 30
     @t_pull = 10
@@ -36,7 +36,6 @@ state :main do
   # push
   receive(->{true}, :lorasim) {
     @push_data.head.random_token = Random.rand(0xffff)
-    p @push_data.payload
     @push_data.payload['rxpk'][0]['time'] = Time.now.strftime("%FT%T.%L000Z")
     @push_data.payload['rxpk'][0]['tmst'] = Time.now.to_i
     @push_data.payload['rxpk'][0]['data'] = @sig.value.encode64
@@ -71,11 +70,84 @@ state :main do
 
     send @tx_ack.encode
 
-    p @sig.payload
     data = @sig.payload['txpk']['data'].decode64
-    p 'hoge'
-    p data.to_hexstr
     send :lorasim, data
   }
 end
+
+
+#===========================================
+define do
+  gw_eui = ['DEADBEAFDEADBEAF'].pack('H*')
+
+  @stat = PacketForwarder.new(
+    head: PacketForwarder::Head.new(
+      protocol_version: 1,
+      identifier: PacketForwarder::Head::PushData,
+    ),
+    guid: gw_eui,
+    payload: {
+      'stat' => {
+        'time' => nil,    # Time.now.strftime("%F %T %Z")
+        'lati' => 35.2442,
+        'long' => 139.6794,
+        'alti' => 0,
+        'rxnb' => nil,    # rxnb
+        'rxok' => nil,    # rxok
+        'rxfw' => nil,    # rxfw
+        'ackr' => 100.0,
+        'dwnb' => nil,    # rxnb
+        'txnb' => 0,
+      }
+    }
+  )
+
+
+  @push_data = PacketForwarder.new(
+    head: PacketForwarder::Head.new(
+      protocol_version: 1,
+      identifier: PacketForwarder::Head::PushData,
+    ),
+    guid: gw_eui,
+    payload: {
+      'rxpk' => [
+        {
+          'time' => nil,   # Time.now.strftime("%FT%T.%L000Z"),
+          'tmst' => nil,   # Time.now.to_i,
+          'freq' => 923.2,
+          'chan' => 2,
+          'rfch' => 0,
+          'stat' => 1,
+          'modu' => "LORA",
+          'datr' => "SF7BW125",
+          'codr' => "4/5",
+          'rssi' => -40,
+          'lsnr' => 2.0,
+          'size' => nil,  # data.length,
+          'data' => nil,  # Base64.encode64(data)
+        }
+      ]
+    }
+  )
+
+  @pull_data = PacketForwarder.new(
+    head: PacketForwarder::Head.new(
+      protocol_version: 1,
+      identifier: PacketForwarder::Head::PullData,
+    ),
+    guid: gw_eui,
+    payload: nil
+  )
+
+  @tx_ack = PacketForwarder.new(
+    head: PacketForwarder::Head.new(
+      protocol_version: 1,
+      identifier: PacketForwarder::Head::TxAck,
+    ),
+    guid: gw_eui,
+    payload: nil
+  )
+
+end
+
 
