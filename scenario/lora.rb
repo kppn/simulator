@@ -45,12 +45,27 @@ state :send_payload do
 
     start_timer :send_uplink, 5
   }
+
+  receive(->{ @sig.mhdr.unconfirmed_data_down? }) {
+    if @sig.macpayload.fhdr.fctrl.foptslen > 0
+      if @sig.macpayload.fhdr.fopts.cid. == MACCommand::LinkADR
+        @logger.info "received ADR Req"
+        send @unconfirmed_data_up_link_adr_ans.encode(*@decode_params)
+      end
+    else
+      # do nothing
+    end
+  }
   
   receive(->{ @sig.mhdr.confirmed_data_down? }) {
     #@uplink_payload_empty.macpayload.fcnt = (@fcnt += 1)
     #@uplink_payload_empty.mhdr.mtype = MHDR::ConfirmedDataUp
 
     #send @uplink_payload_empty.encode(*@decode_params)
+  }
+
+  receive(->{ true }) {
+    @logger.info @sig
   }
 end
 
@@ -90,7 +105,7 @@ deveui = ['1112131415161718'].pack('H*')
           nwkaddr: 0b0_10000001_10000010_10000011
         ),
         fctrl: FCtrl.new(
-          adr: false,
+          adr: true,
           adrackreq: false,
           ack: false
         ),
@@ -99,6 +114,38 @@ deveui = ['1112131415161718'].pack('H*')
       ),
       fport: 1,
       frmpayload: FRMPayload.new("\x01\x02\x03\x04\x05\x06\x07\x08")
+    ),
+  )
+
+@unconfirmed_data_up_link_adr_ans = 
+  PHYPayload.new(
+    mhdr: MHDR.new(
+      mtype: MHDR::UnconfirmedDataUp
+    ),
+    macpayload: MACPayload.new(
+      fhdr: FHDR.new(
+        devaddr: DevAddr.new(
+          nwkid:   0b1000000,
+          nwkaddr: 0b0_10000001_10000010_10000011
+        ),
+        fctrl: FCtrl.new(
+          adr: true,
+          adrackreq: false,
+          ack: false,
+          foptslen: 1
+        ),
+        fcnt: 0,
+        fopts: MACCommand.new(
+          cid: MACCommand::LinkADR,
+          payload: LinkADRAns.new(
+            powerack: true,
+            datarateack: true,
+            channelmaskack: true
+          ),
+        ),
+      ),
+      fport: 0,
+      frmpayload: nil
     ),
   )
 
