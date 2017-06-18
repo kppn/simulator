@@ -5,8 +5,6 @@ require 'socket'
 require 'pp'
 require 'awesome_print'
 
-require_relative 'xproto'
-
 # event exception
 class Transit < StandardError
   attr_accessor :before_state, :after_state
@@ -87,6 +85,8 @@ class Simulator
     @__ev_receiver = ev_receiver
     @__current_state = :initial
 
+    @__active_timers = {}
+
     @logger.info "event socket: #{ev_receiver.addr[3]}:#{ev_receiver.addr[1]}"
   end
 
@@ -150,12 +150,21 @@ class Simulator
   def start_timer(timer_name, time)
     @logger.info "start timer: #{timer_name} #{time}"
 
+    stop_active_timer!(@__active_timers, timer_name)
+
     _, port, _, ip = @__ev_receiver.addr
-    Thread.new(timer_name, time, ip, port) do |timer_name, time|
+    th = Thread.new(timer_name, time, ip, port) do |timer_name, time|
       data = [EventKind::Timer].pack('C') + timer_name.to_s
       sleep time
       UDPSocket.new.send(data, 0, ip, port)
     end
+    @__active_timers[timer_name] = th
+  end
+
+  def stop_timer(timer_name)
+    @logger.info "stop timer: #{timer_name}"
+
+    stop_active_timer!(@__active_timers, timer_name)
   end
 
   #--------------------------
@@ -253,12 +262,6 @@ class Simulator
     return nil unless target_event
 
     target_event[:action]
-    #events[:receives].each do |event|
-    #  if self.instance_eval(& event[:cond])
-    #    return event[:action]
-    #  end
-    #end
-    #nil
   end
 
   def fetch_timer_action(events, signal)
@@ -289,6 +292,13 @@ class Simulator
     action = states[current_state][:in_action]
     if action
       self.instance_eval &action
+    end
+  end
+
+  def stop_active_timer!(timers, timer_name)
+    if th = timers[timer_name]
+      th.kill
+      timers.delete(timer_name)
     end
   end
 end
